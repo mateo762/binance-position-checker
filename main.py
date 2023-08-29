@@ -1,7 +1,7 @@
 from bson.objectid import ObjectId
 from db.mongo_utils import MongoUtils
 from trading.binance_utils import BinanceUtils
-from logger_module import setup_logger
+from utils.logger_module import setup_logger
 import os
 import time
 from dotenv import load_dotenv
@@ -90,4 +90,4 @@ while True:
         except Exception as e:
             logger.error(f"Error while checking and closing position: {e}")
             
-    time.sleep(300)  # Wait for 5 minutes before the next iteration
+    time.sleep(4)  # Wait
