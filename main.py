@@ -2,6 +2,7 @@ from bson.objectid import ObjectId
 from db.mongo_utils import MongoUtils
 from trading.binance_utils import BinanceUtils
 from utils.logger_module import setup_logger
+from utils.email_module import send_email
 import os
 import time
 from dotenv import load_dotenv
@@ -58,6 +59,11 @@ def check_and_close_position(position, mongo, binance):
         f"Symbol: {symbol}, Current Price: {current_price}, Last Update: {life_cycle_last_value}, {operation_field}: {threshold_value}, TP3: {take_profit_3_value}, Position Type: {position_type}, Status: {close_status}")
 
     if would_close:
+        # Send email notification
+        email_subject = f"Position Alert for {symbol}"
+        email_body = f"Symbol: {symbol}, Current Price: {current_price}, Last Update: {life_cycle_last_value}, {operation_field}: {threshold_value}, TP3: {take_profit_3_value}, Position Type: {position_type}, Status: {close_status}"
+        send_email(email_subject, email_body)
+
         if position_type == "Short":
             quantity_to_buy = abs(position_amount)
             print(f"Closing short position by buying {quantity_to_buy} {symbol}")
