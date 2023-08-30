@@ -1,6 +1,7 @@
 from bson.objectid import ObjectId
 from utils.email_module import send_email
 from utils.logger_module import setup_logger
+import time
 
 logger = setup_logger(__name__, 'my_app.log')
 
@@ -58,12 +59,14 @@ def check_and_close_position(position, mongo, binance):
         # Send email notification
         email_subject = f"Position Alert for {symbol}"
         email_body = f"Symbol: {symbol}, Current Price: {current_price}, Last Update: {life_cycle_last_value}, {operation_field}: {threshold_value}, TP3: {take_profit_3_value}, Position Type: {position_type}, Status: {close_status}"
-        send_email(email_subject, email_body)
+        #send_email(email_subject, email_body)
 
         if position_type == "Short":
             quantity_to_buy = abs(position_amount)
             print(f"Closing short position by buying {quantity_to_buy} {symbol}")
-            # binance.close_short_position(symbol, quantity_to_buy)
+            time.sleep(1)
+            #binance.close_short_position(symbol, quantity_to_buy)
         else:  # Long position
             print(f"Closing long position by selling {position_amount} {symbol}")
-            # binance.close_long_position(symbol, position_amount)
+            time.sleep(1)
+            #binance.close_long_position(symbol, position_amount)
