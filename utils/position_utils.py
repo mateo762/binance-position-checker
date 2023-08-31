@@ -36,8 +36,7 @@ def check_and_close_position(position, mongo, binance):
         return
 
     threshold_value = mongo.get_operation_value_for_order(transaction['order_id'], operation_field)
-    take_profit_3_value = mongo.get_operation_value_for_order(transaction['order_id'],
-                                                              'takeProfit3')  # Fetching the take_profit_3_value
+    take_profit_3_value = mongo.get_operation_value_for_order(transaction['order_id'], 'takeProfit3')  # Fetching the take_profit_3_value
     current_price = binance.get_current_price(symbol)
 
     # Determine position type
@@ -51,7 +50,9 @@ def check_and_close_position(position, mongo, binance):
 
     close_status = "Would Close" if would_close else "Would Not Close"
 
-    account_number, last_transaction_number = mongo.get_account_and_transaction_number(transaction['account_id'])
+    info_account = mongo.get_account_and_transaction_number(transaction['account_id'])
+    account_number = info_account[0]
+    last_transaction_number = info_account[1]
 
     # Log the details
     logger.info(
@@ -64,10 +65,10 @@ def check_and_close_position(position, mongo, binance):
         #send_email(email_subject, email_body)
         if position_type == "Short":
             quantity_to_buy = abs(position_amount)
-            print(f"Closing short position by buying {quantity_to_buy} {symbol}")
+            logger.info(f"Closing short position by buying {quantity_to_buy} {symbol}")
             time.sleep(1)
             binance.close_short_position(symbol, quantity_to_buy, account_number, last_transaction_number+1)
         else:  # Long position
-            print(f"Closing long position by selling {position_amount} {symbol}")
+            logger.info(f"Closing long position by selling {position_amount} {symbol}")
             time.sleep(1)
             binance.close_long_position(symbol, position_amount, account_number, last_transaction_number+1)

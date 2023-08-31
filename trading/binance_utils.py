@@ -30,6 +30,7 @@ class BinanceUtils:
         """
         Close a long position by selling.
         """
+
         self.client.futures_create_order(symbol=symbol, side='SELL', type='MARKET', quantity=quantity, newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_safety')
 
     def get_all_open_positions(self):

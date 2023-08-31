@@ -42,7 +42,7 @@ class MongoUtils:
     def get_account_and_transaction_number(self, account_id):
 
         account = self.accounts_collection.find_one({'_id': account_id})
-        return account['number'], account['lastTransactionNumber']
+        return [account['accountNumber'], account['lastTransactionNumber']]
 
     def get_most_recent_transaction_for_symbol(self, symbol, account_id):
         """
