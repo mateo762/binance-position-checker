@@ -23,13 +23,13 @@ class BinanceUtils:
         """
         Close a short position by buying.
         """
-        self.client.futures_create_order(symbol=symbol, side='BUY', type='MARKET', quantity=quantity)
+        self.client.futures_create_order(symbol=symbol, side='BUY', type='MARKET', quantity=quantity, newClientOrderId="SAFETY")
 
     def close_long_position(self, symbol, quantity):
         """
         Close a long position by selling.
         """
-        self.client.futures_create_order(symbol=symbol, side='SELL', type='MARKET', quantity=quantity)
+        self.client.futures_create_order(symbol=symbol, side='SELL', type='MARKET', quantity=quantity, newClientOrderId="SAFETY")
 
     def get_all_open_positions(self):
         """
