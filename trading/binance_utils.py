@@ -19,17 +19,18 @@ class BinanceUtils:
         position = next((item for item in self.client.futures_account()['positions'] if item["symbol"] == symbol), None)
         return position
 
-    def close_short_position(self, symbol, quantity):
+    def close_short_position(self, symbol, quantity, account_number, last_transaction_number):
         """
         Close a short position by buying.
         """
-        self.client.futures_create_order(symbol=symbol, side='BUY', type='MARKET', quantity=quantity, newClientOrderId="SAFETY")
 
-    def close_long_position(self, symbol, quantity):
+        self.client.futures_create_order(symbol=symbol, side='BUY', type='MARKET', quantity=quantity, newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_safety')
+
+    def close_long_position(self, symbol, quantity, account_number, last_transaction_number):
         """
         Close a long position by selling.
         """
-        self.client.futures_create_order(symbol=symbol, side='SELL', type='MARKET', quantity=quantity, newClientOrderId="SAFETY")
+        self.client.futures_create_order(symbol=symbol, side='SELL', type='MARKET', quantity=quantity, newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_safety')
 
     def get_all_open_positions(self):
         """

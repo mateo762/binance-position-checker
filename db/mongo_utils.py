@@ -8,6 +8,7 @@ class MongoUtils:
         self.db = self.client[database_name]
         self.transactions_collection = self.db['transactions']
         self.orders_collection = self.db['orders']
+        self.accounts_collection = self.db['accounts']
 
     def get_recent_transactions(self, account_id, transaction_state='OPEN'):
         """
@@ -37,6 +38,11 @@ class MongoUtils:
         """
         order = self.orders_collection.find_one({'_id': order_id})
         return order['params'].get(field_name)
+
+    def get_account_and_transaction_number(self, account_id):
+
+        account = self.accounts_collection.find_one({'_id': account_id})
+        return account['number'], account['lastTransactionNumber']
 
     def get_most_recent_transaction_for_symbol(self, symbol, account_id):
         """

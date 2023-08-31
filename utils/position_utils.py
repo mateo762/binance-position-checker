@@ -43,6 +43,8 @@ def check_and_close_position(position, mongo, binance):
     # Determine position type
     position_type = "Short" if position_amount < 0 else "Long"
 
+    threshold_value = 6
+
     # Logic to determine if position should be closed
     if position_type == "Long":
         would_close = current_price <= threshold_value or current_price >= take_profit_3_value
@@ -51,22 +53,23 @@ def check_and_close_position(position, mongo, binance):
 
     close_status = "Would Close" if would_close else "Would Not Close"
 
+    account_number, last_transaction_number = mongo.get_account_and_transaction_number(transaction['account_id'])
+
     # Log the details
     logger.info(
-        f"Symbol: {symbol}, Current Price: {current_price}, Last Update: {life_cycle_last_value}, {operation_field}: {threshold_value}, TP3: {take_profit_3_value}, Position Type: {position_type}, Status: {close_status}")
+        f"Symbol: {symbol}, Current Price: {current_price}, Last Update: {life_cycle_last_value}, {operation_field}: {threshold_value}, TP3: {take_profit_3_value}, Position Type: {position_type}, Status: {close_status}, Account Number: {account_number}, Last Transaction: {last_transaction_number}")
 
     if would_close:
         # Send email notification
         email_subject = f"Position Alert for {symbol}"
         email_body = f"Symbol: {symbol}, Current Price: {current_price}, Last Update: {life_cycle_last_value}, {operation_field}: {threshold_value}, TP3: {take_profit_3_value}, Position Type: {position_type}, Status: {close_status}"
         #send_email(email_subject, email_body)
-
         if position_type == "Short":
             quantity_to_buy = abs(position_amount)
             print(f"Closing short position by buying {quantity_to_buy} {symbol}")
             time.sleep(1)
-            #binance.close_short_position(symbol, quantity_to_buy)
+            binance.close_short_position(symbol, quantity_to_buy, account_number, last_transaction_number+1)
         else:  # Long position
             print(f"Closing long position by selling {position_amount} {symbol}")
             time.sleep(1)
-            #binance.close_long_position(symbol, position_amount)
+            binance.close_long_position(symbol, position_amount, account_number, last_transaction_number+1)
