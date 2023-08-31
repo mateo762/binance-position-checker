@@ -43,8 +43,6 @@ def check_and_close_position(position, mongo, binance):
     # Determine position type
     position_type = "Short" if position_amount < 0 else "Long"
 
-    threshold_value = 6
-
     # Logic to determine if position should be closed
     if position_type == "Long":
         would_close = current_price <= threshold_value or current_price >= take_profit_3_value
