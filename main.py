@@ -32,4 +32,4 @@ while True:
         except Exception as e:
             logger.error(f"Error while checking and closing position: {e}")
 
-    time.sleep(4)  # Wait
+    time.sleep(0.2)  # Wait

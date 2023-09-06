@@ -52,8 +52,8 @@ class BinanceUtils:
             self.positions_cache = [position for position in positions if float(position['positionAmt']) != 0]
             self.last_cache_update = now
             for position in self.positions_cache:
-                position['orderParams'] = self.mongo.get_most_recent_transaction_for_symbol(position['symbol'], ObjectId('64d623cafa0a150e2234a500'))
-
+                transaction = self.mongo.get_most_recent_transaction_for_symbol(position['symbol'], ObjectId('64d623cafa0a150e2234a500'))
+                position['orderParams'] = self.mongo.get_order_for_transaction(transaction['order_id'])
             # If there are no open positions, wait for 2 seconds
             if not self.positions_cache:
                 time.sleep(2)

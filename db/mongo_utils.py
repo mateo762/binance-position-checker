@@ -55,6 +55,11 @@ class MongoUtils:
 
         return transaction[0] if transaction else None
 
+    def get_order_for_transaction(self, order_id):
+        order = self.orders_collection.find_one({'_id': order_id})
+        return order['params']
+
+
 # Usage example:
 # mongo = MongoUtils(MONGODB_URI, MONGODB_DATABASE)
 # recent_transactions = mongo.get_recent_transactions('64d623cafa0a150e2234a500')
