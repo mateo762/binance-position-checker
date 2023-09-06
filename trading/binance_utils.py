@@ -1,10 +1,12 @@
 from binance.client import Client
 from datetime import datetime, timezone
 import time
+from bson import ObjectId
 
 
 class BinanceUtils:
-    def __init__(self, api_key, api_secret):
+    def __init__(self, api_key, api_secret, mongo):
+        self.mongo = mongo
         self.client = Client(api_key=api_key, api_secret=api_secret)
         self.positions_cache = None
         self.last_cache_update = datetime.min.replace(tzinfo=timezone.utc)
@@ -49,10 +51,14 @@ class BinanceUtils:
             positions = self.client.futures_account()['positions']
             self.positions_cache = [position for position in positions if float(position['positionAmt']) != 0]
             self.last_cache_update = now
+            for position in self.positions_cache:
+                position['orderParams'] = self.mongo.get_most_recent_transaction_for_symbol(position['symbol'], ObjectId('64d623cafa0a150e2234a500'))
+
             # If there are no open positions, wait for 2 seconds
             if not self.positions_cache:
                 time.sleep(2)
 
+        print(self.positions_cache)
         return self.positions_cache
 
 # Usage example:

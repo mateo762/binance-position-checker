@@ -20,7 +20,7 @@ BINANCE_API_SECRET = os.getenv('BINANCE_API_SECRET')
 
 # Initialize MongoDB and Binance utilities
 mongo = MongoUtils(MONGODB_URI, MONGODB_DATABASE)
-binance = BinanceUtils(BINANCE_API_KEY, BINANCE_API_SECRET)
+binance = BinanceUtils(BINANCE_API_KEY, BINANCE_API_SECRET, mongo)
 
 while True:
     logger.info("Starting a new iteration...")
