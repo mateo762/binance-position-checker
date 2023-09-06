@@ -20,7 +20,9 @@ LIFE_CYCLE_MAP = {
 }
 
 
-def check_and_close_position(position, mongo, binance):
+def check_and_close_position(position, current_price, mongo, binance):
+    print("check_and_close_position()")
+    return
     symbol = position['symbol']
     position_amount = float(position['positionAmt'])
 
