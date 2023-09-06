@@ -72,3 +72,4 @@ def check_and_close_position(position, mongo, binance):
             logger.info(f"Closing long position by selling {position_amount} {symbol}")
             time.sleep(1)
             binance.close_long_position(symbol, position_amount, account_number, last_transaction_number+1)
+        binance.get_all_open_positions(force_update=True)

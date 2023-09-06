@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 class BinanceUtils:
     def __init__(self, api_key, api_secret):
         self.client = Client(api_key=api_key, api_secret=api_secret)
+        self.positions_cache = None
+        self.last_cache_update = datetime.min.replace(tzinfo=timezone.utc)
 
     def get_current_price(self, symbol):
         """
@@ -33,29 +35,22 @@ class BinanceUtils:
 
         self.client.futures_create_order(symbol=symbol, side='SELL', type='MARKET', quantity=quantity, newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_safety')
 
-    def get_all_open_positions(self):
+    def get_all_open_positions(self, force_update=False):
         """
-        Fetch all open positions.
+        Fetch all open positions. Use cached data if available and not stale.
         """
-        positions = self.client.futures_account()['positions']
-        open_positions = [position for position in positions if float(position['positionAmt']) != 0]
-        return open_positions
+        now = datetime.now(timezone.utc)
+        cache_duration = now - self.last_cache_update
 
-    def get_open_position_time(self, symbol, position_amount):
-        """
-        Fetch the time at which a position was opened for a given symbol.
-        """
-        trades = self.client.futures_account_trades(symbol=symbol)
-        for trade in trades:
-            if position_amount > 0 and trade['buyer'] == True:
-                timestamp = int(trade['time']) / 1000  # Convert to seconds
-                dt_object = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-                return dt_object.isoformat()
-            elif position_amount < 0 and trade['buyer'] == False:
-                timestamp = int(trade['time']) / 1000  # Convert to seconds
-                dt_object = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-                return dt_object.isoformat()
-        return None
+        if not self.positions_cache or cache_duration.total_seconds() > 60 or force_update:
+            positions = self.client.futures_account()['positions']
+            self.positions_cache = [position for position in positions if float(position['positionAmt']) != 0]
+            self.last_cache_update = now
+            print("HOSDIFJLSDNFLSFISDNFLJKSDNFLJKSFLKS")
+        else:
+            print("noo")
+
+        return self.positions_cache
 
 # Usage example:
 # binance = BinanceUtils(BINANCE_API_KEY, BINANCE_API_SECRET)
