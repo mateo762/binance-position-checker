@@ -1,5 +1,6 @@
 from binance.client import Client
 from datetime import datetime, timezone
+import time
 
 
 class BinanceUtils:
@@ -47,6 +48,10 @@ class BinanceUtils:
             self.positions_cache = [position for position in positions if float(position['positionAmt']) != 0]
             self.last_cache_update = now
             print("HOSDIFJLSDNFLSFISDNFLJKSDNFLJKSFLKS")
+
+            # If there are no open positions, wait for 2 seconds
+            if not self.positions_cache:
+                time.sleep(2)
         else:
             print("noo")
 
