@@ -27,14 +27,16 @@ class BinanceUtils:
         Close a short position by buying.
         """
 
-        self.client.futures_create_order(symbol=symbol, side='BUY', type='MARKET', quantity=quantity, newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_safety')
+        self.client.futures_create_order(symbol=symbol, side='BUY', type='MARKET', quantity=quantity,
+                                         newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_safety')
 
     def close_long_position(self, symbol, quantity, account_number, last_transaction_number):
         """
         Close a long position by selling.
         """
 
-        self.client.futures_create_order(symbol=symbol, side='SELL', type='MARKET', quantity=quantity, newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_safety')
+        self.client.futures_create_order(symbol=symbol, side='SELL', type='MARKET', quantity=quantity,
+                                         newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_safety')
 
     def get_all_open_positions(self, force_update=False):
         """
@@ -43,17 +45,13 @@ class BinanceUtils:
         now = datetime.now(timezone.utc)
         cache_duration = now - self.last_cache_update
 
-        if not self.positions_cache or cache_duration.total_seconds() > 60 or force_update:
+        if not self.positions_cache or cache_duration.total_seconds() > 5 or force_update:
             positions = self.client.futures_account()['positions']
             self.positions_cache = [position for position in positions if float(position['positionAmt']) != 0]
             self.last_cache_update = now
-            print("HOSDIFJLSDNFLSFISDNFLJKSDNFLJKSFLKS")
-
             # If there are no open positions, wait for 2 seconds
             if not self.positions_cache:
                 time.sleep(2)
-        else:
-            print("noo")
 
         return self.positions_cache
 
