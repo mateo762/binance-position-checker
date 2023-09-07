@@ -91,9 +91,9 @@ def check_and_close_position(position, current_price, mongo, binance):
         logger.info(
             f"Symbol: {symbol}, Current Price: {current_price}, Position Status: {position['status']}, 'Low': {threshold_low}, 'High': {threshold_high}, Position Type: {position_type}, Status: {close_status}")
         # Send email notification
-        email_subject = f"Position Alert for {symbol}"
-        email_body = f"Symbol: {symbol}, Current Price: {current_price}, Position Status: {position['status']}, 'Low': {threshold_low}, 'High': {threshold_high}, Position Type: {position_type}, Status: {close_status}"
-        send_email(email_subject, email_body)
+        # email_subject = f"Position Alert for {symbol}"
+        # email_body = f"Symbol: {symbol}, Current Price: {current_price}, Position Status: {position['status']}, 'Low': {threshold_low}, 'High': {threshold_high}, Position Type: {position_type}, Status: {close_status}"
+        # send_email(email_subject, email_body)
         if position_type == "Short":
             quantity_to_buy = abs(position_amount)
             logger.info(f"Closing short position by buying {quantity_to_buy} {symbol}")
