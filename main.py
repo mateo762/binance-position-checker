@@ -61,6 +61,7 @@ tracked_symbols = ['BTCUSDT', 'LTCUSDT', 'ETHUSDT', 'DOTUSDT']
 start_websockets(tracked_symbols)
 
 while True:
+
     open_positions = binance.get_all_open_positions()
 
     for position in open_positions:
