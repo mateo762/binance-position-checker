@@ -1,10 +1,18 @@
 from binance.client import Client
 from datetime import datetime, timezone
+import time
+from bson import ObjectId
+from utils.logger_module import setup_logger
+
+logger = setup_logger(__name__, 'my_app.log')
 
 
 class BinanceUtils:
-    def __init__(self, api_key, api_secret):
+    def __init__(self, api_key, api_secret, mongo):
+        self.mongo = mongo
         self.client = Client(api_key=api_key, api_secret=api_secret)
+        self.positions_cache = None
+        self.last_cache_update = datetime.min.replace(tzinfo=timezone.utc)
 
     def get_current_price(self, symbol):
         """
@@ -19,43 +27,45 @@ class BinanceUtils:
         position = next((item for item in self.client.futures_account()['positions'] if item["symbol"] == symbol), None)
         return position
 
-    def close_short_position(self, symbol, quantity, account_number, last_transaction_number):
+    def close_short_position(self, symbol, quantity, account_number, last_transaction_number, position_status):
         """
         Close a short position by buying.
         """
+        print(f'{account_number}_{symbol}_{last_transaction_number}_{position_status}')
+        self.client.futures_create_order(symbol=symbol, side='BUY', type='MARKET', quantity=quantity,
+                                         newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_{position_status}_safety')
 
-        self.client.futures_create_order(symbol=symbol, side='BUY', type='MARKET', quantity=quantity, newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_safety')
-
-    def close_long_position(self, symbol, quantity, account_number, last_transaction_number):
+    def close_long_position(self, symbol, quantity, account_number, last_transaction_number, position_status):
         """
         Close a long position by selling.
         """
+        print(f'{account_number}_{symbol}_{last_transaction_number}_{position_status}')
+        self.client.futures_create_order(symbol=symbol, side='SELL', type='MARKET', quantity=quantity,
+                                         newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_{position_status}_safety')
 
-        self.client.futures_create_order(symbol=symbol, side='SELL', type='MARKET', quantity=quantity, newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_safety')
+    def get_all_open_positions(self, force_update=False):
+        """
+        Fetch all open positions. Use cached data if available and not stale.
+        """
+        now = datetime.now(timezone.utc)
+        cache_duration = now - self.last_cache_update
 
-    def get_all_open_positions(self):
-        """
-        Fetch all open positions.
-        """
-        positions = self.client.futures_account()['positions']
-        open_positions = [position for position in positions if float(position['positionAmt']) != 0]
-        return open_positions
+        if not self.positions_cache or cache_duration.total_seconds() > 60 or force_update:
+            positions = self.client.futures_account()['positions']
+            self.positions_cache = [position for position in positions if float(position['positionAmt']) != 0]
+            self.last_cache_update = now
+            for position in self.positions_cache:
+                transaction = self.mongo.get_most_recent_transaction_for_symbol(position['symbol'],
+                                                                                ObjectId('64d623cafa0a150e2234a500'))
+                position['orderParams'] = self.mongo.get_order_for_transaction(transaction['order_id'])
+                position['accountNumber'], position[
+                    'lastTransactionNumber'] = self.mongo.get_account_and_transaction_number(transaction['account_id'])
+                position['status'] = 'OPEN'
+            # If there are no open positions, wait for 2 seconds
+            if not self.positions_cache:
+                time.sleep(2)
 
-    def get_open_position_time(self, symbol, position_amount):
-        """
-        Fetch the time at which a position was opened for a given symbol.
-        """
-        trades = self.client.futures_account_trades(symbol=symbol)
-        for trade in trades:
-            if position_amount > 0 and trade['buyer'] == True:
-                timestamp = int(trade['time']) / 1000  # Convert to seconds
-                dt_object = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-                return dt_object.isoformat()
-            elif position_amount < 0 and trade['buyer'] == False:
-                timestamp = int(trade['time']) / 1000  # Convert to seconds
-                dt_object = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-                return dt_object.isoformat()
-        return None
+        return self.positions_cache
 
 # Usage example:
 # binance = BinanceUtils(BINANCE_API_KEY, BINANCE_API_SECRET)
