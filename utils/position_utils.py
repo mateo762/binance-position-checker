@@ -67,8 +67,8 @@ def check_and_close_position(position, mongo, binance):
             quantity_to_buy = abs(position_amount)
             logger.info(f"Closing short position by buying {quantity_to_buy} {symbol}")
             time.sleep(1)
-            binance.close_short_position(symbol, quantity_to_buy, account_number, last_transaction_number+1)
+            #binance.close_short_position(symbol, quantity_to_buy, account_number, last_transaction_number+1)
         else:  # Long position
             logger.info(f"Closing long position by selling {position_amount} {symbol}")
-            time.sleep(1)
+            #time.sleep(1)
             binance.close_long_position(symbol, position_amount, account_number, last_transaction_number+1)
