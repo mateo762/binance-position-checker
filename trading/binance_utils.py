@@ -2,6 +2,9 @@ from binance.client import Client
 from datetime import datetime, timezone
 import time
 from bson import ObjectId
+from utils.logger_module import setup_logger
+
+logger = setup_logger(__name__, 'my_app.log')
 
 
 class BinanceUtils:
@@ -24,21 +27,21 @@ class BinanceUtils:
         position = next((item for item in self.client.futures_account()['positions'] if item["symbol"] == symbol), None)
         return position
 
-    def close_short_position(self, symbol, quantity, account_number, last_transaction_number):
+    def close_short_position(self, symbol, quantity, account_number, last_transaction_number, position_status):
         """
         Close a short position by buying.
         """
-
+        print(f'{account_number}_{symbol}_{last_transaction_number}_{position_status}')
         self.client.futures_create_order(symbol=symbol, side='BUY', type='MARKET', quantity=quantity,
-                                         newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_safety')
+                                         newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_{position_status}_safety')
 
-    def close_long_position(self, symbol, quantity, account_number, last_transaction_number):
+    def close_long_position(self, symbol, quantity, account_number, last_transaction_number, position_status):
         """
         Close a long position by selling.
         """
-
+        print(f'{account_number}_{symbol}_{last_transaction_number}_{position_status}')
         self.client.futures_create_order(symbol=symbol, side='SELL', type='MARKET', quantity=quantity,
-                                         newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_safety')
+                                         newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_{position_status}_safety')
 
     def get_all_open_positions(self, force_update=False):
         """
@@ -47,18 +50,21 @@ class BinanceUtils:
         now = datetime.now(timezone.utc)
         cache_duration = now - self.last_cache_update
 
-        if not self.positions_cache or cache_duration.total_seconds() > 5 or force_update:
+        if not self.positions_cache or cache_duration.total_seconds() > 60 or force_update:
             positions = self.client.futures_account()['positions']
             self.positions_cache = [position for position in positions if float(position['positionAmt']) != 0]
             self.last_cache_update = now
             for position in self.positions_cache:
-                transaction = self.mongo.get_most_recent_transaction_for_symbol(position['symbol'], ObjectId('64d623cafa0a150e2234a500'))
+                transaction = self.mongo.get_most_recent_transaction_for_symbol(position['symbol'],
+                                                                                ObjectId('64d623cafa0a150e2234a500'))
                 position['orderParams'] = self.mongo.get_order_for_transaction(transaction['order_id'])
+                position['accountNumber'], position[
+                    'lastTransactionNumber'] = self.mongo.get_account_and_transaction_number(transaction['account_id'])
+                position['status'] = 'OPEN'
             # If there are no open positions, wait for 2 seconds
             if not self.positions_cache:
                 time.sleep(2)
 
-        print(self.positions_cache)
         return self.positions_cache
 
 # Usage example:

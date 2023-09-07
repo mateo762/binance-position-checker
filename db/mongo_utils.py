@@ -40,9 +40,8 @@ class MongoUtils:
         return order['params'].get(field_name)
 
     def get_account_and_transaction_number(self, account_id):
-
         account = self.accounts_collection.find_one({'_id': account_id})
-        return [account['accountNumber'], account['lastTransactionNumber']]
+        return account['accountNumber'], account['lastTransactionNumber']
 
     def get_most_recent_transaction_for_symbol(self, symbol, account_id):
         """
@@ -58,7 +57,6 @@ class MongoUtils:
     def get_order_for_transaction(self, order_id):
         order = self.orders_collection.find_one({'_id': order_id})
         return order['params']
-
 
 # Usage example:
 # mongo = MongoUtils(MONGODB_URI, MONGODB_DATABASE)
