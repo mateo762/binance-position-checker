@@ -43,7 +43,8 @@ class BinanceUtils:
         self.client.futures_create_order(symbol=symbol, side='SELL', type='MARKET', quantity=quantity,
                                          newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_{position_status}_safety')
 
-    def get_all_open_positions(self, force_update=False): """
+    def get_all_open_positions(self, force_update=False):
+        """
         Fetch all open positions. Use cached data if available and not stale.
         """
         now = datetime.now(timezone.utc)
@@ -52,16 +53,31 @@ class BinanceUtils:
         if not self.positions_cache or cache_duration.total_seconds() > 60 or force_update:
             print("broker: BINANCE, refreshing cache...")
             positions = self.client.futures_account()['positions']
-            self.positions_cache = [position for position in positions if float(position['positionAmt']) != 0]
-            self.last_cache_update = now
-            for position in self.positions_cache:
+            fresh_positions_cache = [position for position in positions if float(position['positionAmt']) != 0]
+
+            # Use a dictionary for easier checking and updates
+            cache_dict = {pos['order_id']: pos for pos in self.positions_cache} if self.positions_cache else {}
+
+            for position in fresh_positions_cache:
                 transaction = self.mongo.get_most_recent_transaction_for_symbol(position['symbol'],
                                                                                 ObjectId('64d623cafa0a150e2234a500'))
                 position['order_id'] = transaction['order_id']
-                position['orderParams'] = self.mongo.get_order_for_transaction(transaction['order_id'])
-                position['accountNumber'], position[
-                    'lastTransactionNumber'] = self.mongo.get_account_and_transaction_number(transaction['account_id'])
-                position['status'] = 'OPEN'
+
+                # Check if 'order_id' already exists in the cache
+                if position['order_id'] not in cache_dict:
+                    position['orderParams'] = self.mongo.get_order_for_transaction(transaction['order_id'])
+                    position['accountNumber'], position[
+                        'lastTransactionNumber'] = self.mongo.get_account_and_transaction_number(
+                        transaction['account_id'])
+                    position['status'] = 'OPEN'
+
+                    # Add to the dictionary
+                    cache_dict[position['order_id']] = position
+
+            # Convert back to list format for consistency
+            self.positions_cache = list(cache_dict.values())
+            self.last_cache_update = now
+
             # If there are no open positions, wait for 2 seconds
             if not self.positions_cache:
                 time.sleep(2)
