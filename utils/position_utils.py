@@ -55,6 +55,7 @@ def check_and_close_position(position, current_price, mongo, binance):
 
     position_type = "Short" if position_amount < 0 else "Long"
     would_close = False
+    change_status = False
     threshold_low = 0
     threshold_high = 0
     if position['status'] == "OPEN":
@@ -64,7 +65,7 @@ def check_and_close_position(position, current_price, mongo, binance):
         if change_status and not would_close:
             position['status'] = 'PROTECCION_13'
         elif would_close:
-            position['status'] = 'CLOSED_STOPLOSS'
+            position['status'] = 'C_SL'
     elif position['status'] == 'PROTECCION_13':
         threshold_low = position['orderParams']['point13']
         threshold_high = position['orderParams']['point61']
@@ -72,7 +73,7 @@ def check_and_close_position(position, current_price, mongo, binance):
         if change_status and not would_close:
             position['status'] = 'PROTECCION_23'
         elif would_close:
-            position['status'] = 'CLOSED_PROTECCION_13'
+            position['status'] = 'C_13'
     elif position['status'] == 'PROTECCION_23':
         threshold_low = position['orderParams']['point23']
         threshold_high = position['orderParams']['takeProfit3']
@@ -80,27 +81,37 @@ def check_and_close_position(position, current_price, mongo, binance):
                                                        close="TP3")
         if would_close:
             if closed_tp3:
-                position['status'] = 'CLOSED_TP3'
+                position['status'] = 'C_TP3'
             else:
-                position['status'] = 'CLOSED_PROTECCION_23'
+                position['status'] = 'C_23'
+
+    print(f"broker: BINANCE, symbol: {symbol} current_price: {current_price}, status: {position['status']}, position: {position_type}, low: {threshold_low}, high: {threshold_high}")
+
 
     close_status = "Would Close" if would_close else "Would Not Close"
+
+    change_status = True
+
+    if change_status:
+        # Log the details
+        logger.info(
+            f"CHANGE STATUS. Symbol: {symbol}, Current Price: {current_price}, Position Status: {position['status']}, 'Low': {threshold_low}, 'High': {threshold_high}, Position Type: {position_type}, Status: {would_close}")
 
     if would_close:
         # Log the details
         logger.info(
             f"Symbol: {symbol}, Current Price: {current_price}, Position Status: {position['status']}, 'Low': {threshold_low}, 'High': {threshold_high}, Position Type: {position_type}, Status: {close_status}")
         # Send email notification
-        # email_subject = f"Position Alert for {symbol}"
-        # email_body = f"Symbol: {symbol}, Current Price: {current_price}, Position Status: {position['status']}, 'Low': {threshold_low}, 'High': {threshold_high}, Position Type: {position_type}, Status: {close_status}"
-        # send_email(email_subject, email_body)
+        email_subject = f"Position Alert for {symbol}"
+        email_body = f"Symbol: {symbol}, Current Price: {current_price}, Position Status: {position['status']}, 'Low': {threshold_low}, 'High': {threshold_high}, Position Type: {position_type}, Status: {close_status}"
+        send_email(email_subject, email_body)
         if position_type == "Short":
             quantity_to_buy = abs(position_amount)
             logger.info(f"Closing short position by buying {quantity_to_buy} {symbol}")
             time.sleep(1)
-            #binance.close_short_position(symbol, quantity_to_buy, position['accountNumber'],position['lastTransactionNumber'] + 1, position['status'])
+            binance.close_short_position(symbol, quantity_to_buy, position['accountNumber'],position['lastTransactionNumber'] + 1, position['status'])
         else:  # Long position
             logger.info(f"Closing long position by selling {position_amount} {symbol}")
             time.sleep(1)
-            #binance.close_long_position(symbol, position_amount, position['accountNumber'],position['lastTransactionNumber'] + 1, position['status'])
+            binance.close_long_position(symbol, position_amount, position['accountNumber'],position['lastTransactionNumber'] + 1, position['status'])
         binance.get_all_open_positions(force_update=True)

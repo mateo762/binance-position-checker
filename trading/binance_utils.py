@@ -31,7 +31,7 @@ class BinanceUtils:
         """
         Close a short position by buying.
         """
-        print(f'{account_number}_{symbol}_{last_transaction_number}_{position_status}')
+        logger.info(f'{account_number}_{symbol}_{last_transaction_number}_{position_status}')
         self.client.futures_create_order(symbol=symbol, side='BUY', type='MARKET', quantity=quantity,
                                          newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_{position_status}_safety')
 
@@ -39,24 +39,25 @@ class BinanceUtils:
         """
         Close a long position by selling.
         """
-        print(f'{account_number}_{symbol}_{last_transaction_number}_{position_status}')
+        logger.info(f'{account_number}_{symbol}_{last_transaction_number}_{position_status}')
         self.client.futures_create_order(symbol=symbol, side='SELL', type='MARKET', quantity=quantity,
                                          newClientOrderId=f'{account_number}_{symbol}_{last_transaction_number}_{position_status}_safety')
 
-    def get_all_open_positions(self, force_update=False):
-        """
+    def get_all_open_positions(self, force_update=False): """
         Fetch all open positions. Use cached data if available and not stale.
         """
         now = datetime.now(timezone.utc)
         cache_duration = now - self.last_cache_update
 
         if not self.positions_cache or cache_duration.total_seconds() > 60 or force_update:
+            print("broker: BINANCE, refreshing cache...")
             positions = self.client.futures_account()['positions']
             self.positions_cache = [position for position in positions if float(position['positionAmt']) != 0]
             self.last_cache_update = now
             for position in self.positions_cache:
                 transaction = self.mongo.get_most_recent_transaction_for_symbol(position['symbol'],
                                                                                 ObjectId('64d623cafa0a150e2234a500'))
+                position['order_id'] = transaction['order_id']
                 position['orderParams'] = self.mongo.get_order_for_transaction(transaction['order_id'])
                 position['accountNumber'], position[
                     'lastTransactionNumber'] = self.mongo.get_account_and_transaction_number(transaction['account_id'])

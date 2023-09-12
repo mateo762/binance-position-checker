@@ -27,39 +27,6 @@ binance = BinanceUtils(BINANCE_API_KEY, BINANCE_API_SECRET, mongo)
 # Global dictionary to store the latest price for each symbol
 current_prices = {}
 
-
-def on_message(ws, message):
-    data = json.loads(message)
-    symbol = data['s']
-    price = float(data['p'])
-    current_prices[symbol] = price
-
-
-def on_error(ws, error):
-    print(f"WebSocket error: {error}")
-
-
-def on_close(ws, close_status_code, close_msg):
-    print(f"WebSocket connection closed. Code: {close_status_code}, Message: {close_msg}")
-
-
-def start_websockets(symbols):
-    for symbol in symbols:
-        ws_url = f"wss://fstream.binance.com/ws/{symbol.lower()}@trade"
-        ws = websocket.WebSocketApp(
-            ws_url,
-            on_message=on_message,
-            on_error=on_error,
-            on_close=on_close
-        )
-        # Run the WebSocket in a separate thread so it doesn't block the main loop
-        threading.Thread(target=ws.run_forever).start()
-
-
-# Get all symbols you're interested in
-tracked_symbols = ['BTCUSDT', 'LTCUSDT', 'ETHUSDT', 'DOTUSDT']
-start_websockets(tracked_symbols)
-
 while True:
 
     open_positions = binance.get_all_open_positions()
@@ -67,7 +34,8 @@ while True:
     for position in open_positions:
         try:
             symbol = position['symbol']
-            current_price_symbol = current_prices.get(symbol, "NaN")
+            current_price_symbol = binance.get_current_price(symbol)
+            time.sleep(0.07)
             check_and_close_position(position, current_price_symbol, mongo, binance)
         except Exception as e:
             logger.error(f"Error while checking and closing position: {e}")
