@@ -47,6 +47,7 @@ def check_would_close(current_price, position_type, threshold_low, threshold_hig
 def check_and_close_position(position, current_price, mongo, binance):
     if current_price == "NaN":
         return
+
     symbol = position['symbol']
     position_amount = float(position['positionAmt'])
 
@@ -85,33 +86,32 @@ def check_and_close_position(position, current_price, mongo, binance):
             else:
                 position['status'] = 'C_23'
 
-    print(f"broker: BINANCE, symbol: {symbol} current_price: {current_price}, status: {position['status']}, position: {position_type}, low: {threshold_low}, high: {threshold_high}")
-
-
     close_status = "Would Close" if would_close else "Would Not Close"
 
-    change_status = True
+    if not change_status and not would_close:
+        logger.info(
+            f"NO CHANGES. Symbol: {symbol}, Current Price: {current_price}, Position Status: {position['status']}, 'Low': {threshold_low}, 'High': {threshold_high}, Position Type: {position_type}, Status: {would_close}")
 
-    if change_status:
-        # Log the details
+    if change_status and not would_close:
         logger.info(
             f"CHANGE STATUS. Symbol: {symbol}, Current Price: {current_price}, Position Status: {position['status']}, 'Low': {threshold_low}, 'High': {threshold_high}, Position Type: {position_type}, Status: {would_close}")
 
     if would_close:
-        # Log the details
         logger.info(
-            f"Symbol: {symbol}, Current Price: {current_price}, Position Status: {position['status']}, 'Low': {threshold_low}, 'High': {threshold_high}, Position Type: {position_type}, Status: {close_status}")
+                f"CLOSING STATUS. Symbol: {symbol}, Current Price: {current_price}, Position Status: {position['status']}, 'Low': {threshold_low}, 'High': {threshold_high}, Position Type: {position_type}, Status: {close_status}")
         # Send email notification
         email_subject = f"Position Alert for {symbol}"
         email_body = f"Symbol: {symbol}, Current Price: {current_price}, Position Status: {position['status']}, 'Low': {threshold_low}, 'High': {threshold_high}, Position Type: {position_type}, Status: {close_status}"
         send_email(email_subject, email_body)
         if position_type == "Short":
             quantity_to_buy = abs(position_amount)
-            logger.info(f"Closing short position by buying {quantity_to_buy} {symbol}")
-            time.sleep(1)
-            binance.close_short_position(symbol, quantity_to_buy, position['accountNumber'],position['lastTransactionNumber'] + 1, position['status'])
+            logger.info(f"Sleeping 5 seconds before trying to close...")
+            time.sleep(5)
+            binance.close_short_position(position['transaction_id'], symbol, quantity_to_buy, position['accountNumber'],position['lastTransactionNumber'] + 1, position['status'])
+            time.sleep(2)
         else:  # Long position
-            logger.info(f"Closing long position by selling {position_amount} {symbol}")
-            time.sleep(1)
-            binance.close_long_position(symbol, position_amount, position['accountNumber'],position['lastTransactionNumber'] + 1, position['status'])
+            logger.info(f"Sleeping 5 seconds before trying to close...")
+            time.sleep(5)
+            binance.close_long_position(position['transaction_id'], symbol, position_amount, position['accountNumber'],position['lastTransactionNumber'] + 1, position['status'])
+            time.sleep(2)
         binance.get_all_open_positions(force_update=True)

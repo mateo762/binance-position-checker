@@ -19,11 +19,24 @@ class MongoUtils:
             'transactionState': transaction_state
         }).sort('transactionDate', -1)
 
+    def get_transaction_by_id(self, transaction_id):
+        """
+        Fetch a transaction by its ID.
+        """
+        return self.transactions_collection.find_one({'_id': transaction_id})
+
     def get_order_by_id(self, order_id):
         """
         Fetch an order by its ID.
         """
         return self.orders_collection.find_one({'_id': order_id})
+
+    def get_transaction_state(self, transaction_id):
+        """
+        Fetch the transaction state from a transaction using its ID.
+        """
+        transaction = self.get_transaction_by_id(transaction_id)
+        return transaction['closing']
 
     def get_stop_loss_for_order(self, order_id):
         """
